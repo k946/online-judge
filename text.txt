@@ -1,0 +1,205 @@
+
+//rlimit
+#include<wait.h>
+#include<sys/resource.h>
+#include<iostream>
+
+using namespace std;
+
+int main(){
+
+	char * const prama[] = {"a",0};
+ 	struct rlimit s;
+	s.rlim_cur = s.rlim_max = 1;
+
+
+	//setrlimit(RLIMIT_CPU, &s);
+
+
+	pid_t child = fork();
+	if( child  == 0){
+		
+		printf("%d", setrlimit(RLIMIT_CPU, &s));
+		printf("11");
+
+		execv(prama[0],prama);
+	}else if(child > 0){
+		waitpid(-1,0,0);
+		printf("creation!");
+	}else{
+		printf("fail!");
+	}
+
+	
+	return 0;
+}
+#include<string>
+#include<wait.h>
+#include<sys/resource.h>
+#include<iostream>
+
+using namespace std;
+
+int main(){
+
+	char * const prama[] = {"a",0};
+ 	struct rlimit s;
+	s.rlim_cur = s.rlim_max = 1;
+
+
+	//setrlimit(RLIMIT_CPU, &s);
+
+
+	pid_t child = fork();
+	if( child  == 0){
+		
+		printf("%d", setrlimit(RLIMIT_CPU, &s));
+		printf("11");
+
+		execv(prama[0],prama);
+	}else if(child > 0){
+		waitpid(-1,0,0);
+		printf("creation!");
+	}else{
+		printf("fail!");
+	}
+
+	
+	return 0;
+}
+
+
+
+
+
+//rusage 
+#include<unistd.h>
+#include<stdio.h> 
+#include<string>
+#include<stdlib.h>
+#include<wait.h>
+#include<sys/time.h>
+#include<sys/resource.h>
+#include<iostream>
+
+using namespace std;
+
+int main(){
+	//int a[10240] = {0};
+	char * const prama[] = {"a",0};
+ 	struct rlimit s;
+	s.rlim_cur = s.rlim_max = 1;
+	
+	struct rusage rup;
+
+	//setrlimit(RLIMIT_CPU, &s);
+
+
+	pid_t child = fork();
+	if( child  == 0){
+		execv(prama[0],prama);
+	}else if(child > 0){
+		int status ;
+		wait4(child, &status,0, &rup);
+		cout << status << endl;
+		//cout << getrusage(RUSAGE_SELF, &rup) << endl;
+		int utime = rup.ru_utime.tv_sec * 1000 + rup.ru_utime.tv_usec / 1000;
+		int stime = rup.ru_stime.tv_sec * 1000 + rup.ru_stime.tv_usec / 1000 ;
+		int time = utime + stime;
+		cout << time << endl;		
+		cout << "pagesize:" << getpagesize() << endl;
+		cout << "minflt:" << rup.ru_minflt * (getpagesize() / 1024) << endl;
+		cout << "majflt:" << rup.ru_majflt << endl;
+	
+		
+		printf("creation!");
+	}else{
+		printf("fail!");
+	}
+
+	
+	return 0;
+}
+
+
+//rusage - child
+/*
+the miflt increase when the momery be used
+*/
+#include<stdio.h>
+#include<stdlib.h>
+
+int a[1024000] = {0};
+int main(){
+	
+	for(int i = 0; i < 1024000; i++){
+		a[i] = i;
+	}
+	
+
+	//exit(0);
+	return 0;
+	
+}
+
+
+//ptrace
+
+void trace_child(pid_t pid){
+	int status = 2 << 30;
+	long orig_eax, eax;
+	int insyscall = 0;
+
+	struct rusage rup;
+	while(1){
+		
+		wait4(pid, &status, 0, &rup);
+
+		if( WEXITSTATUS(status) == 11 ){
+			cout << "runtime error: " << WEXITSTATUS(status) << endl;
+			break;		
+		}
+		//cout << "status: " << WEXITSTATUS(status) << endl;
+			
+		if( WIFEXITED(status) ){
+			int time = rup.ru_utime.tv_sec * 1000 + rup.ru_utime.tv_usec / 1000;
+			time += rup.ru_stime.tv_sec * 1000 + rup.ru_stime.tv_usec / 1000 ;
+			cout << "time: " << time << endl;
+			cout << "memory: " << rup.ru_minflt * (getpagesize() / 1024) << endl;
+			break;
+		}
+
+		orig_eax = ptrace(PTRACE_PEEKUSER, pid, 8 * ORIG_RAX, NULL);		
+		if(orig_eax != -1)		
+			cout << "syscall: " << orig_eax << endl;
+		ptrace(PTRACE_SYSCALL, pid, NULL, NULL);
+
+	}
+
+}
+
+int main(){
+	char * const prama[] = {"a",0};	
+	pid_t child = fork();
+
+	
+	if( child  == 0){
+		struct rlimit rli;
+		rli.rlim_cur = rli.rlim_max = 1;
+		setrlimit(RLIMIT_CPU, &rli);
+		
+		rli.rlim_cur = rli.rlim_max = 128 * 1024 * 1024 ;
+		setrlimit(RLIMIT_AS, &rli);
+
+		ptrace(PTRACE_TRACEME, 0, NULL, NULL);		
+		
+		execv(prama[0],prama);
+	}else if(child > 0){
+		
+		trace_child(child);
+		printf("creation!\n");
+	}
+
+	
+	return 0;
+}

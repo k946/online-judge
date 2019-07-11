@@ -1,0 +1,15 @@
+user/userCode.c: In function ‘main’:
+user/userCode.c:5:17: warning: passing argument 1 of ‘getline’ from incompatible pointer type [-Wincompatible-pointer-types]
+  while( getline(a)){
+                 ^
+In file included from user/userCode.c:1:0:
+/usr/include/stdio.h:678:20: note: expected ‘char ** restrict’ but argument is of type ‘char *’
+ extern _IO_ssize_t getline (char **__restrict __lineptr,
+                    ^
+user/userCode.c:5:9: error: too few arguments to function ‘getline’
+  while( getline(a)){
+         ^
+In file included from user/userCode.c:1:0:
+/usr/include/stdio.h:678:20: note: declared here
+ extern _IO_ssize_t getline (char **__restrict __lineptr,
+                    ^
