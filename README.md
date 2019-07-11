@@ -6,4 +6,4 @@
   judge.cpp：用于编译、运行、判断用户的代码  
   
 ## 运行效果：
-
+<img src="https://github.com/k946/online-judge/blob/master/图与文档/judge.PNG" width="350" height="350" alt="图片加载失败时，显示这段字"/>
